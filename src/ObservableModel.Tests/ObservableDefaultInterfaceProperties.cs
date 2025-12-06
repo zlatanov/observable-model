@@ -20,7 +20,7 @@ namespace ObservableModel
 
             feature.Age = 11;
             Assert.False( feature.IsAgeEven );
-            Assert.Equal( new[] { "IsChanged", "Age", "IsAgeEven" }, propertyChanges );
+            Assert.Equal( [ "IsChanged", "Age", "IsAgeEven" ], propertyChanges );
         }
     }
 }

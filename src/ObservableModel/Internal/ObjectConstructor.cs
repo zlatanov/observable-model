@@ -33,7 +33,7 @@ namespace ObservableModel
             {
                 var argument = x.Factory.GetGenericArguments()[ 0 ];
 
-                if ( argument.IsValueType && argument.FullName?.StartsWith( "System.ValueTuple`" ) == true )
+                if ( argument.IsValueType && argument.FullName?.StartsWith( "System.ValueTuple`", StringComparison.Ordinal ) == true )
                     return (Binder)Activator.CreateInstance( typeof( BinderVarArg<> ).MakeGenericType( argument ), x.Type )!;
 
                 return (Binder)Activator.CreateInstance( typeof( Binder<> ).MakeGenericType( argument ), x.Type )!;

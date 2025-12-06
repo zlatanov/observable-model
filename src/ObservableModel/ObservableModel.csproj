@@ -4,11 +4,17 @@
         <RootNamespace>ObservableModel</RootNamespace>
         <Description>A lightweight .NET library providing observable and trackable object models. Includes INotifyPropertyChanged, ObservableObject, change-tracking support, and helpers for reactive patterns with IObservable&lt;T&gt;.</Description>
         <PackageTags>observable;reactive;INotifyPropertyChanged;change-tracking;mvvm;rx</PackageTags>
-        <Version>1.0.1</Version>
+        <Version>1.0.2</Version>
         <PackageVersion>$(Version)</PackageVersion>
         <Nullable>enable</Nullable>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        
+        <!-- Enable all latest .NET analyzers -->
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <AnalysisLevel>latest-minimum</AnalysisLevel>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>

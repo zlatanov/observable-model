@@ -123,7 +123,7 @@ namespace ObservableModel.Linq
                     if ( arrayIndex > 0 )
                     {
                         ReadOnlyMemory<T> memory = new( array, start: 0, length: arrayIndex );
-                        bool isInitializing = m_items is ITrackable t ? t.IsInitializing : true;
+                        bool isInitializing = m_items is not ITrackable t || t.IsInitializing;
 
                         ForwardOnNext( new NewItems<T>( memory, isInitializing: isInitializing ) );
                     }

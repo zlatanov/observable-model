@@ -13,8 +13,6 @@ namespace ObservableModel
 
     public static class Trackable<T> where T : Trackable
     {
-        private static readonly MethodInfo OriginalEqualsMethod = typeof( T ).GetMethod( "OriginalEquals", BindingFlags.Public | BindingFlags.Instance )!;
-
         private static readonly ExceptionDispatchInfo? _exception;
         private static readonly Type? _type;
 

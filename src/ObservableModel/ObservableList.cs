@@ -37,7 +37,7 @@ namespace ObservableModel
 
         public ObservableList( IEnumerable<T>? collection )
         {
-            m_items = collection is object ? new List<T>( collection ) : [];
+            m_items = collection is object ? [ .. collection ] : [];
 
             if ( m_items.Count > 0 )
             {
@@ -443,7 +443,7 @@ namespace ObservableModel
                 target.Add( selector( item ) );
             }
 
-            return CollectionChanges.Subscribe( ( NotifyCollectionChangedEventArgs x ) =>
+            return CollectionChanges.Subscribe( x =>
             {
                 switch ( x.Action )
                 {
@@ -754,7 +754,7 @@ namespace ObservableModel
         }
 
 
-        bool IList.Contains( object? item ) => item is null ? false : Contains( (T)item );
+        bool IList.Contains( object? item ) => item is not null && Contains( (T)item );
 
 
         void IList.Insert( int index, object? item ) => Insert( index, (T)( item ?? throw new ArgumentNullException( nameof( item ) ) ) );

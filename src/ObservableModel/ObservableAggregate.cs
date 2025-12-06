@@ -56,7 +56,7 @@ namespace ObservableModel
     {
         public ObservableAggregate( ObservableList<T> collection, TAccumulate seed, Func<TAccumulate, T, TAccumulate> func, string? funcExpression )
         {
-            if ( funcExpression is not null && !funcExpression.Contains( '.' ) )
+            if ( funcExpression is not null && !funcExpression.AsSpan().Contains( '.' ) )
             {
                 // Not a valid func expression. Most likely a variable was used.
                 funcExpression = null;
@@ -88,7 +88,7 @@ namespace ObservableModel
             if ( e?.PropertyName is not null && m_funcExpression is not null )
             {
                 // Ignore change notifications from properties not found in the aggregate expression
-                if ( !m_funcExpression.Contains( e.PropertyName ) )
+                if ( !m_funcExpression.Contains( e.PropertyName, StringComparison.Ordinal ) )
                     return;
             }
 
