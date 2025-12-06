@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>$(NetVersion)</TargetFramework>
+        <RootNamespace>ObservableModel</RootNamespace>
+        <Description>Reactive extensions and helpers.</Description>
+        <PackageTags>rx reactive</PackageTags>
+        <Version>1.0</Version>
+        <PackageVersion>1.0</PackageVersion>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="ObservableModel.Tests" />
+    </ItemGroup>
+</Project>
