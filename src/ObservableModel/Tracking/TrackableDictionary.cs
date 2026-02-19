@@ -76,6 +76,14 @@ namespace ObservableModel
             return false;
         }
 
+        public override IEnumerable<TValue> GetOriginalItems()
+        {
+            if ( m_originalItems is not null )
+                return m_originalItems.Values;
+
+            return this;
+        }
+
         public override IEnumerable<TrackableListChangedItem<TValue>> GetChangedItems()
         {
             if ( m_originalItems is null )

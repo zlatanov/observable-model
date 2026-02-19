@@ -221,6 +221,8 @@ namespace ObservableModel
 
         public abstract IEnumerable<TrackableListChangedItem<T>> GetChangedItems();
 
+        public abstract IEnumerable<T> GetOriginalItems();
+
         IEnumerable<TrackableListChangedItem> ITrackableList.GetChangedItems()
         {
             foreach ( var changedItem in GetChangedItems() )
