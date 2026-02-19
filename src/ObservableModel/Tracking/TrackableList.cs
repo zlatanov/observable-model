@@ -51,7 +51,7 @@ namespace ObservableModel
             return false;
         }
 
-        public override IEnumerable<TValue> GetOriginalItems()
+        public override IEnumerable<T> GetOriginalItems()
         {
             if ( m_originalItems is not null )
                 return m_originalItems;
