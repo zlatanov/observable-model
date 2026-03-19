@@ -143,6 +143,94 @@ namespace ObservableModel
 
 
         [Fact]
+        public void GetOriginalValueForReadonlyConstructorProperty()
+        {
+            var person = Person.Create( id: 42, name: "Test" );
+
+            Assert.Equal( 42, person.GetOriginalValue<int>( nameof( Person.Id ) ) );
+            Assert.Equal( 42, person.GetOriginalValue( nameof( Person.Id ) ) );
+        }
+
+
+        [Fact]
+        public void GetOriginalValueNonGenericOverload()
+        {
+            var person = Person.Create( name: "Ivan", age: 33 );
+
+            Assert.Equal( "Ivan", person.GetOriginalValue( nameof( Person.Name ) ) );
+            Assert.Equal( 33, person.GetOriginalValue( nameof( Person.Age ) ) );
+
+            person.Name = "Changed";
+            person.Age = 99;
+
+            Assert.Equal( "Ivan", person.GetOriginalValue( nameof( Person.Name ) ) );
+            Assert.Equal( 33, person.GetOriginalValue( nameof( Person.Age ) ) );
+        }
+
+
+        [Fact]
+        public void GetOriginalValueForNullNestedTrackable()
+        {
+            var person = Person.Create();
+
+            Assert.Null( person.GetOriginalValue<Person>( nameof( Person.Target ) ) );
+            Assert.Null( person.GetOriginalValue( nameof( Person.Target ) ) );
+
+            var target = Person.Create( name: "Target" );
+            person.Target = target;
+
+            Assert.Null( person.GetOriginalValue<Person>( nameof( Person.Target ) ) );
+            Assert.Same( target, person.Target );
+        }
+
+
+        [Fact]
+        public void GetOriginalValueForNestedTrackableAfterAccept()
+        {
+            var person = Person.Create();
+            var target = Person.Create( name: "Target" );
+
+            person.Target = target;
+            person.AcceptChanges();
+
+            Assert.Same( target, person.GetOriginalValue<Person>( nameof( Person.Target ) ) );
+
+            person.Target = Person.Create( name: "New Target" );
+            Assert.Same( target, person.GetOriginalValue<Person>( nameof( Person.Target ) ) );
+        }
+
+
+        [Fact]
+        public void GetOriginalValueAfterReject()
+        {
+            var person = Person.Create( name: "Ivan", age: 33 );
+
+            person.Name = "Changed";
+            person.Age = 99;
+            person.RejectChanges();
+
+            Assert.Equal( "Ivan", person.GetOriginalValue<string>( nameof( Person.Name ) ) );
+            Assert.Equal( 33, person.GetOriginalValue<int>( nameof( Person.Age ) ) );
+        }
+
+
+        [Fact]
+        public void GetOriginalValueAfterMultipleAccepts()
+        {
+            var person = Person.Create( name: "V1", age: 1 );
+
+            person.Name = "V2";
+            person.AcceptChanges();
+
+            person.Name = "V3";
+            person.AcceptChanges();
+
+            Assert.Equal( "V3", person.GetOriginalValue<string>( nameof( Person.Name ) ) );
+            Assert.Equal( "V3", person.Name );
+        }
+
+
+        [Fact]
         public void SetOriginalValueShouldSetCurrentIfNotChanged()
         {
             var person = Person.Create( name: "Test" );
@@ -625,6 +713,297 @@ namespace ObservableModel
         }
 
 
+        [Fact]
+        public void IsPropertyTrackedReturnsTrueForTrackedProperties()
+        {
+            var person = Person.Create();
+
+            Assert.True( person.IsPropertyTracked( nameof( Person.Name ) ) );
+            Assert.True( person.IsPropertyTracked( nameof( Person.Age ) ) );
+            Assert.True( person.IsPropertyTracked( nameof( Person.Id ) ) );
+            Assert.True( person.IsPropertyTracked( nameof( Person.Target ) ) );
+            Assert.True( person.IsPropertyTracked( nameof( Person.Mother ) ) );
+            Assert.True( person.IsPropertyTracked( nameof( Person.People ) ) );
+            Assert.True( person.IsPropertyTracked( nameof( Person.Relatives ) ) );
+        }
+
+
+        [Fact]
+        public void IsPropertyTrackedReturnsFalseForUntrackedProperties()
+        {
+            var person = Person.Create();
+
+            Assert.False( person.IsPropertyTracked( nameof( Person.UntrackedTime ) ) );
+            Assert.False( person.IsPropertyTracked( "NonExistent" ) );
+        }
+
+
+        [Fact]
+        public void IsChangedRaisesPropertyChanged()
+        {
+            var person = Person.Create();
+            var isChangedEvents = new List<bool>();
+
+            person.PropertyChanges.Subscribe( x =>
+            {
+                if ( x.PropertyName == nameof( Trackable.IsChanged ) )
+                    isChangedEvents.Add( person.IsChanged );
+            } );
+
+            person.Name = "Changed";
+            Assert.Single( isChangedEvents, true );
+
+            person.Name = "John Doe";
+            Assert.Equal( 2, isChangedEvents.Count );
+            Assert.False( isChangedEvents[ 1 ] );
+        }
+
+
+        [Fact]
+        public void TrackedPropertyChangeRaisesPropertyChanged()
+        {
+            var person = Person.Create( name: "Ivan" );
+            var changes = new List<string>();
+
+            person.PropertyChanges.Subscribe( x => changes.Add( x.PropertyName ) );
+
+            person.Name = "Changed";
+            person.Age = 100;
+
+            Assert.Contains( "Name", changes );
+            Assert.Contains( "Age", changes );
+        }
+
+
+        [Fact]
+        public void SettingSameValueDoesNotRaisePropertyChanged()
+        {
+            var person = Person.Create( name: "Ivan", age: 33 );
+            var changes = new List<string>();
+
+            person.PropertyChanges.Subscribe( x => changes.Add( x.PropertyName ) );
+
+            person.Name = "Ivan";
+            person.Age = 33;
+
+            Assert.Empty( changes );
+            Assert.False( person.IsChanged );
+        }
+
+
+        [Fact]
+        public void BeginInitThrowsWhenChangedPropertyExists()
+        {
+            var person = Person.Create();
+            person.Name = "Changed";
+
+            Assert.True( person.IsChanged );
+            Assert.Throws<InvalidOperationException>( () => person.BeginInit() );
+        }
+
+
+        [Fact]
+        public void EndInitThrowsWithoutBeginInit()
+        {
+            var person = Person.Create();
+
+            Assert.Throws<InvalidOperationException>( () => person.EndInit() );
+        }
+
+
+        [Fact]
+        public void NestedBeginEndInit()
+        {
+            var person = Person.Create();
+
+            person.BeginInit();
+            person.BeginInit();
+            person.Name = "Nested init";
+            Assert.True( person.IsInitializing );
+
+            person.EndInit();
+            Assert.True( person.IsInitializing );
+
+            person.EndInit();
+            Assert.False( person.IsInitializing );
+            Assert.False( person.IsChanged );
+        }
+
+
+        [Fact]
+        public void RejectSingleProperty()
+        {
+            var person = Person.Create( name: "Ivan", age: 33 );
+
+            person.Name = "Changed";
+            person.Age = 99;
+            Assert.True( person.IsChanged );
+
+            person.RejectChanges( nameof( Person.Name ) );
+            Assert.Equal( "Ivan", person.Name );
+            Assert.Equal( 99, person.Age );
+            Assert.True( person.IsChanged );
+
+            person.RejectChanges( nameof( Person.Age ) );
+            Assert.Equal( 33, person.Age );
+            Assert.False( person.IsChanged );
+        }
+
+
+        [Fact]
+        public void SetOriginalValueWhenPropertyIsChanged()
+        {
+            var person = Person.Create( name: "Original" );
+
+            person.Name = "Current";
+            Assert.True( person.IsChanged );
+
+            person.SetOriginalValue( nameof( Person.Name ), "Current" );
+            Assert.False( person.IsChanged );
+            Assert.Equal( "Current", person.Name );
+            Assert.Equal( "Current", person.GetOriginalValue<string>( nameof( Person.Name ) ) );
+        }
+
+
+        [Fact]
+        public void AcceptChangesClearsAllChanges()
+        {
+            var person = Person.Create( name: "Ivan", age: 33 );
+
+            person.Name = "Changed";
+            person.Age = 100;
+            person.Mother = Person.Create( name: "Mom" );
+            person.Mother.Age = 60;
+
+            Assert.True( person.IsChanged );
+            Assert.True( person.Mother.IsChanged );
+
+            person.AcceptChanges();
+
+            Assert.False( person.IsChanged );
+            Assert.False( person.Mother.IsChanged );
+            Assert.False( person.IsPropertyChanged( nameof( Person.Name ) ) );
+            Assert.False( person.IsPropertyChanged( nameof( Person.Age ) ) );
+            Assert.Equal( "Changed", person.GetOriginalValue<string>( nameof( Person.Name ) ) );
+            Assert.Equal( 100, person.GetOriginalValue<int>( nameof( Person.Age ) ) );
+        }
+
+
+        [Fact]
+        public void RejectChangesRestoresAllProperties()
+        {
+            var person = Person.Create( name: "Ivan", age: 33 );
+
+            person.Name = "Changed";
+            person.Age = 100;
+            person.Mother = Person.Create( name: "Mom" );
+
+            Assert.True( person.IsChanged );
+
+            person.RejectChanges();
+
+            Assert.False( person.IsChanged );
+            Assert.Equal( "Ivan", person.Name );
+            Assert.Equal( 33, person.Age );
+            Assert.Null( person.Mother );
+        }
+
+
+        [Fact]
+        public void EmployeeWithStructKey()
+        {
+            var person = Person.Create( name: "Monika" );
+            var employee = Employee.Create( person, "+1234567890" );
+
+            Assert.False( employee.IsChanged );
+            Assert.Same( person, employee.Key.Person );
+            Assert.Equal( "+1234567890", employee.Key.Phone );
+
+            employee.Salary = 100_000M;
+            Assert.True( employee.IsChanged );
+
+            employee.RejectChanges();
+            Assert.False( employee.IsChanged );
+            Assert.Equal( 0M, employee.Salary );
+        }
+
+
+        [Fact]
+        public void GetChangesReturnsEmptyWhenUnchanged()
+        {
+            var person = Person.Create( name: "Ivan", age: 33 );
+
+            var changes = person.GetChanges();
+            Assert.Empty( changes );
+        }
+
+
+        [Fact]
+        public void SwapNestedTrackableDoesNotLeakChanges()
+        {
+            var person = Person.Create();
+            var first = Person.Create( name: "First" );
+            var second = Person.Create( name: "Second" );
+
+            person.Target = first;
+            person.AcceptChanges();
+            Assert.False( person.IsChanged );
+
+            person.Target = second;
+            Assert.True( person.IsChanged );
+
+            first.Name = "First changed";
+            Assert.True( first.IsChanged );
+            Assert.True( person.IsPropertyChanged( nameof( Person.Target ) ) );
+
+            // first's change should not propagate to person since it's detached
+            person.Target = first;
+            person.AcceptChanges();
+            first.RejectChanges();
+
+            second.Name = "Second changed";
+            Assert.False( person.IsChanged );
+        }
+
+
+        [Fact]
+        public void IsPropertyChangedAgainstAnotherObject()
+        {
+            var person1 = Person.Create( name: "Ivan", age: 33 );
+            var person2 = Person.Create( name: "Ivan", age: 40 );
+
+            Assert.False( person1.IsPropertyChanged( nameof( Person.Name ), person2 ) );
+            Assert.True( person1.IsPropertyChanged( nameof( Person.Age ), person2 ) );
+        }
+
+
+        [Fact]
+        public void GetOriginalValueForAutoInitializedProperties()
+        {
+            var obj = Trackable<AutoInitModel>.Create();
+
+            Assert.Equal( "Test", obj.Name );
+            Assert.Equal( 42, obj.Count );
+
+            Assert.Equal( "Test", obj.GetOriginalValue<string>( nameof( AutoInitModel.Name ) ) );
+            Assert.Equal( 42, obj.GetOriginalValue<int>( nameof( AutoInitModel.Count ) ) );
+
+            Assert.False( obj.IsChanged );
+
+            obj.Name = "Changed";
+            obj.Count = 100;
+
+            Assert.Equal( "Test", obj.GetOriginalValue<string>( nameof( AutoInitModel.Name ) ) );
+            Assert.Equal( 42, obj.GetOriginalValue<int>( nameof( AutoInitModel.Count ) ) );
+
+            obj.RejectChanges();
+
+            Assert.Equal( "Test", obj.Name );
+            Assert.Equal( 42, obj.Count );
+            Assert.False( obj.IsChanged );
+        }
+
+
         class Untracked : Person
         {
             public Untracked() : base( 1 ) { }
@@ -681,6 +1060,16 @@ namespace ObservableModel
 
                 SetOriginalValue( propertyName, value );
             }
+        }
+
+
+        public abstract class AutoInitModel : Trackable
+        {
+            [TrackableProperty]
+            public virtual string Name { get; set; } = "Test";
+
+            [TrackableProperty]
+            public virtual int Count { get; set; } = 42;
         }
     }
 }

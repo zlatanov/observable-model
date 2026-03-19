@@ -289,8 +289,10 @@ namespace ObservableModel
                     ctor.Emit( OpCodes.Ldsfld, propertiesField );
                     ctor.Emit( OpCodes.Stfld, propertiesInstanceField );
 
-                    // Call SetValue or SetTrackableValue for each readonly property
-                    foreach ( var property in properties.Where( x => x.IsReadOnly ) )
+                    // Set the original value for each trackable property from the current value.
+                    // This captures values set by field initializers (e.g. Name { get; set; } = "Test")
+                    // which bypass the overridden setter during construction.
+                    foreach ( var property in properties )
                     {
                         if ( !property.IsTrackable )
                         {
